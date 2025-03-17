@@ -1,0 +1,71 @@
+// prisma/schema.prisma
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model User {
+  id            String    @id @default(uuid())
+  email         String    @unique
+  name          String?
+  googleId      String?   @unique
+  avatar        String?
+  createdAt     DateTime  @default(now()) @map("created_at")
+  updatedAt     DateTime  @updatedAt @map("updated_at")
+  role          Role      @default(USER)
+  merchant      Merchant? @relation(fields: [merchantId], references: [id])
+  merchantId    String?
+
+  @@index([merchantId])
+  @@map("users")
+}
+
+model Merchant {
+  id                String    @id @default(uuid())
+  name              String
+  description       String?
+  logo              String?
+  primaryColor      String?   @default("#000000")
+  secondaryColor    String?   @default("#ffffff")
+  checkoutApiKey    String?   @unique
+  checkoutSecretKey String?   @db.Text
+  publicKey         String?   @unique
+  webhookUrl        String?
+  createdAt         DateTime  @default(now()) @map("created_at")
+  updatedAt         DateTime  @updatedAt @map("updated_at")
+  users             User[]
+  transactions      Transaction[]
+
+  @@index([name])
+  @@map("merchants")
+}
+
+model Transaction {
+  id                String    @id @default(uuid())
+  amount            Float
+  currency          String
+  status            String
+  checkoutPaymentId String?   @unique
+  metadata          Json?
+  createdAt         DateTime  @default(now()) @map("created_at")
+  updatedAt         DateTime  @updatedAt @map("updated_at")
+  merchant          Merchant  @relation(fields: [merchantId], references: [id])
+  merchantId        String
+  customerId        String?
+
+  @@index([merchantId])
+  @@index([status])
+  @@index([createdAt])
+  @@map("transactions")
+}
+
+enum Role {
+  USER
+  ADMIN
+  MERCHANT_ADMIN
+  MERCHANT_USER
+}
